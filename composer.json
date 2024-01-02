@@ -1,6 +1,7 @@
 {
 	"name": "aik099/coding-standard",
 	"description": "The PHP_CodeSniffer coding standard I'm using on all of my projects.",
+    "type": "phpcodesniffer-standard",
 	"keywords": ["PHP_CodeSniffer", "CodeSniffer"],
 	"license": "BSD-3-Clause",
 
