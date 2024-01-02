@@ -51,25 +51,6 @@ class ValidVariableNameSniff extends AbstractVariableSniff
         'php_errormsg',
     );
 
-    /** Member variable names that break the rules, but are allowed.*/
-    protected array $memberExceptions = array(
-        // From "kBase".
-        'Application',
-        'Conn',
-
-        // From "kEvent".
-        'Name',
-        'MasterEvent',
-        'Prefix',
-        'Special',
-
-        // From "kDBItem".
-        'IDField',
-        'TableName',
-        'IgnoreValidation',
-    );
-
-
     /** @inheritDoc */
     protected function processVariable(File $phpcsFile, $stackPtr): void
     {
@@ -90,7 +71,7 @@ class ValidVariableNameSniff extends AbstractVariableSniff
             return;
         }
 
-        if ($this->isCamelCaps($varName) === false) {
+        if (!$this->isCamelCase($varName)) {
             $error = 'Variable "%s" is not in valid camelCase format';
             $data = array($varName);
             $phpcsFile->addError($error, $stackPtr, 'NotCamelCaps', $data);
@@ -122,10 +103,8 @@ class ValidVariableNameSniff extends AbstractVariableSniff
         );
         $className = $phpcsFile->getDeclarationName($classToken);
 
-        $public = ($memberProps['scope'] !== 'private');
-        $errorData = array($className . '::' . $varName);
-
-        if ($this->isCamelCaps($varName, $public) === false) {
+        if (!$this->isCamelCase($varName)) {
+            $errorData = array($className . '::' . $varName);
             $error = '%s member variable "%s" is not in valid camel caps format';
             $data = array(
                 ucfirst($memberProps['scope']),
@@ -168,7 +147,7 @@ class ValidVariableNameSniff extends AbstractVariableSniff
                 continue;
             }
 
-            if ($this->isCamelCaps($varName) === false) {
+            if (!$this->isCamelCase($varName)) {
                 $error = 'Variable in string "%s" is not in valid snake caps format';
                 $data = array($varName);
                 $phpcsFile->addError($error, $stackPtr, 'StringNotCamelCase', $data);
@@ -176,19 +155,8 @@ class ValidVariableNameSniff extends AbstractVariableSniff
         }
     }
 
-    /**
-     * @param bool $public If true, the first character in the string
-     *                       must be an a-z character. If false, the
-     *                       character must be an underscore. This
-     *                       argument is only applicable if $classFormat
-     *                       is false.
-     */
-    protected function isCamelCaps(string $string, bool $public = true): bool
+    protected function isCamelCase(string $string): bool
     {
-        if (in_array($string, $this->memberExceptions) === true) {
-            return true;
-        }
-
-        return Common::isCamelCaps($string, false, $public, false);
+        return Common::isCamelCaps($string, false, true, false);
     }
 }
