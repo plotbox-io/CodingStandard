@@ -35,64 +35,48 @@ use PHP_CodeSniffer\Util\Common;
 class ValidVariableNameSniff extends AbstractVariableSniff
 {
 
-    /**
-     * Variable names, that are reserved in PHP.
-     *
-     * @var array
-     */
+    /** @inheritDoc */
     protected $phpReservedVars = array(
-                                  '_SERVER',
-                                  '_GET',
-                                  '_POST',
-                                  '_REQUEST',
-                                  '_SESSION',
-                                  '_ENV',
-                                  '_COOKIE',
-                                  '_FILES',
-                                  'GLOBALS',
-                                  'http_response_header',
-                                  'HTTP_RAW_POST_DATA',
-                                  'php_errormsg',
-                                 );
+        '_SERVER',
+        '_GET',
+        '_POST',
+        '_REQUEST',
+        '_SESSION',
+        '_ENV',
+        '_COOKIE',
+        '_FILES',
+        'GLOBALS',
+        'http_response_header',
+        'HTTP_RAW_POST_DATA',
+        'php_errormsg',
+    );
 
-    /**
-     * Member variable names that break the rules, but are allowed.
-     *
-     * @var array
-     */
-    protected $memberExceptions = array(
-                                   // From "kBase".
-                                   'Application',
-                                   'Conn',
+    /** Member variable names that break the rules, but are allowed.*/
+    protected array $memberExceptions = array(
+        // From "kBase".
+        'Application',
+        'Conn',
 
-                                   // From "kEvent".
-                                   'Name',
-                                   'MasterEvent',
-                                   'Prefix',
-                                   'Special',
+        // From "kEvent".
+        'Name',
+        'MasterEvent',
+        'Prefix',
+        'Special',
 
-                                   // From "kDBItem".
-                                   'IDField',
-                                   'TableName',
-                                   'IgnoreValidation',
-                                  );
+        // From "kDBItem".
+        'IDField',
+        'TableName',
+        'IgnoreValidation',
+    );
 
 
-    /**
-     * Processes this test, when one of its tokens is encountered.
-     *
-     * @param File $phpcsFile The file being scanned.
-     * @param int  $stackPtr  The position of the current token in the
-     *                        stack passed in $tokens.
-     *
-     * @return void
-     */
-    protected function processVariable(File $phpcsFile, $stackPtr)
+    /** @inheritDoc */
+    protected function processVariable(File $phpcsFile, $stackPtr): void
     {
-        $tokens  = $phpcsFile->getTokens();
+        $tokens = $phpcsFile->getTokens();
         $varName = ltrim($tokens[$stackPtr]['content'], '$');
 
-        // If it's a php reserved var, then its ok.
+        // If it's a php reserved var, then it's ok.
         if (in_array($varName, $this->phpReservedVars) === true) {
             return;
         }
@@ -106,28 +90,20 @@ class ValidVariableNameSniff extends AbstractVariableSniff
             return;
         }
 
-        if ($this->isSnakeCaps($varName) === false) {
-            $error = 'Variable "%s" is not in valid snake caps format';
-            $data  = array($varName);
-            $phpcsFile->addError($error, $stackPtr, 'NotSnakeCaps', $data);
+        if ($this->isCamelCaps($varName) === false) {
+            $error = 'Variable "%s" is not in valid camelCase format';
+            $data = array($varName);
+            $phpcsFile->addError($error, $stackPtr, 'NotCamelCaps', $data);
         }
-    }//end processVariable()
+    }
 
 
-    /**
-     * Processes class member variables.
-     *
-     * @param File $phpcsFile The file being scanned.
-     * @param int  $stackPtr  The position of the current token in the
-     *                        stack passed in $tokens.
-     *
-     * @return void
-     */
+    /** @inheritDoc */
     protected function processMemberVar(File $phpcsFile, $stackPtr)
     {
         $tokens = $phpcsFile->getTokens();
 
-        $varName     = ltrim($tokens[$stackPtr]['content'], '$');
+        $varName = ltrim($tokens[$stackPtr]['content'], '$');
         $memberProps = $phpcsFile->getMemberProperties($stackPtr);
 
         // @codeCoverageIgnoreStart
@@ -144,53 +120,27 @@ class ValidVariableNameSniff extends AbstractVariableSniff
             array(T_CLASS, T_INTERFACE, T_TRAIT),
             $stackPtr
         );
-        $className  = $phpcsFile->getDeclarationName($classToken);
+        $className = $phpcsFile->getDeclarationName($classToken);
 
-        $public    = ($memberProps['scope'] !== 'private');
-        $errorData = array($className.'::'.$varName);
-
-        if ($public === true) {
-            if (substr($varName, 0, 1) === '_') {
-                $error = '%s member variable "%s" must not contain a leading underscore';
-                $data  = array(
-                          ucfirst($memberProps['scope']),
-                          $errorData[0],
-                         );
-                $phpcsFile->addError($error, $stackPtr, 'PublicHasUnderscore', $data);
-                return;
-            }
-        } else {
-            if (substr($varName, 0, 1) !== '_') {
-                $error = 'Private member variable "%s" must contain a leading underscore';
-                $phpcsFile->addError($error, $stackPtr, 'PrivateNoUnderscore', $errorData);
-                return;
-            }
-        }
+        $public = ($memberProps['scope'] !== 'private');
+        $errorData = array($className . '::' . $varName);
 
         if ($this->isCamelCaps($varName, $public) === false) {
             $error = '%s member variable "%s" is not in valid camel caps format';
-            $data  = array(
-                      ucfirst($memberProps['scope']),
-                      $errorData[0],
-                     );
-            $phpcsFile->addError($error, $stackPtr, 'MemberNotCamelCaps', $data);
+            $data = array(
+                ucfirst($memberProps['scope']),
+                $errorData[0],
+            );
+            $phpcsFile->addError($error, $stackPtr, 'MemberNotCamelCase', $data);
         }
-    }//end processMemberVar()
+    }
 
 
-    /**
-     * Processes the variable found within a double quoted string.
-     *
-     * @param File $phpcsFile The file being scanned.
-     * @param int  $stackPtr  The position of the double quoted
-     *                        string.
-     *
-     * @return void
-     */
+    /** @inheritDoc */
     protected function processVariableInString(File $phpcsFile, $stackPtr)
     {
-        $tokens         = $phpcsFile->getTokens();
-        $content        = $tokens[$stackPtr]['content'];
+        $tokens = $phpcsFile->getTokens();
+        $content = $tokens[$stackPtr]['content'];
         $variablesFound = preg_match_all(
             '|[^\\\]\${?([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|',
             $content,
@@ -204,7 +154,7 @@ class ValidVariableNameSniff extends AbstractVariableSniff
 
         foreach ($matches as $match) {
             $varName = $match[1][0];
-            $offset  = $match[1][1];
+            $offset = $match[1][1];
 
             // If it's a php reserved var, then its ok.
             if (in_array($varName, $this->phpReservedVars) === true) {
@@ -218,46 +168,27 @@ class ValidVariableNameSniff extends AbstractVariableSniff
                 continue;
             }
 
-            if ($this->isSnakeCaps($varName) === false) {
+            if ($this->isCamelCaps($varName) === false) {
                 $error = 'Variable in string "%s" is not in valid snake caps format';
-                $data  = array($varName);
-                $phpcsFile->addError($error, $stackPtr, 'StringNotSnakeCaps', $data);
+                $data = array($varName);
+                $phpcsFile->addError($error, $stackPtr, 'StringNotCamelCase', $data);
             }
-        }//end foreach
-    }//end processVariableInString()
-
+        }
+    }
 
     /**
-     * Determines if a variable is in camel caps case.
-     *
-     * @param string $string String.
-     * @param bool   $public If true, the first character in the string
+     * @param bool $public If true, the first character in the string
      *                       must be an a-z character. If false, the
      *                       character must be an underscore. This
      *                       argument is only applicable if $classFormat
      *                       is false.
-     *
-     * @return bool
      */
-    protected function isCamelCaps($string, $public = true)
+    protected function isCamelCaps(string $string, bool $public = true): bool
     {
         if (in_array($string, $this->memberExceptions) === true) {
             return true;
         }
 
         return Common::isCamelCaps($string, false, $public, false);
-    }//end isCamelCaps()
-
-
-    /**
-     * Determines if a variable is in snake caps case.
-     *
-     * @param string $string String.
-     *
-     * @return bool
-     */
-    protected function isSnakeCaps($string)
-    {
-        return strtolower($string) === $string;
-    }//end isSnakeCaps()
-}//end class
+    }
+}
